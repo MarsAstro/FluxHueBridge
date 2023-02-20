@@ -21,6 +21,9 @@ namespace FluxHueBridge
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            FluxHueBridge.Properties.Settings.Default.Reset();
+            FluxHueBridge.Properties.Settings.Default.Save();
+
             HueApiService = new HueApiService();
             FluxApiService  = new FluxApiService(HueApiService);
 
@@ -61,11 +64,17 @@ namespace FluxHueBridge
             }
             else
             {
-                var newWindow = new MainWindow();
-                newWindow.ConnectionErrorState();
+                MainWindow? window = null;
 
-                Current.MainWindow = newWindow;
-                Current.MainWindow.Show();
+                if (MainWindow != null)
+                    window = MainWindow as MainWindow;
+                else
+                    window = new MainWindow();
+
+                window?.ConnectionErrorState();
+
+                MainWindow = window;
+                MainWindow?.Show();
             }
         }
 

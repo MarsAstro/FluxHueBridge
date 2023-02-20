@@ -3,55 +3,195 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:FluxHueBridge"
         mc:Ignorable="d"
+        Title="f.lux Hue Bridge" Height="400" Width="700"
+        Icon="Resources/Icon.ico"
+        WindowStyle="None"
+        Background="Transparent"
+        AllowsTransparency="True"
         ResizeMode="NoResize"
-        Title="f.lux Hue Bridge" Height="250" Width="500"
-        Background="LightGray"
-        Icon="Resources/Icon.ico">
+        WindowStartupLocation="CenterScreen"
+        MouseDown="Window_MouseDown">
 
-    <StackPanel Orientation="Vertical" Margin="10">
-        <StackPanel x:Name="NeedAccess" Visibility="Collapsed">
-            <Label Margin="0,10,0,0" HorizontalAlignment="Center">Configure Philips Hue to continue</Label>
-            <Label x:Name="BridgeSearchText" Margin="0,10,0,0" HorizontalAlignment="Center" Visibility="Collapsed">
-                Looking for Hue Bridge...
-            </Label>
-            <Label x:Name="BridgeSearchFailedText" Margin="0,10,0,0" HorizontalAlignment="Center" Visibility="Collapsed">
-                No Hue Bridge was found on the local network of this computer
-            </Label>
-            <StackPanel x:Name="BridgeAppKeyRetrival" Margin="0,10,0,0">
-                <Label x:Name="AppKeyRetrievalHeaderText" HorizontalAlignment="Center" FontWeight="Bold">Hue Bridge Found!</Label>
-                <StackPanel x:Name="ConnectionButtonPanel">
-                    <Button x:Name="ConnectionButton" Click="ConnectionButton_Click"
-                        HorizontalContentAlignment="Center" Margin="120,5,120,0" Padding="0,3,0,3">
-                        Click here to initiate connection process
-                    </Button>
-                    <Label FontSize="7" HorizontalAlignment="Center" FontWeight="Bold" Foreground="DarkRed">(Configure f.lux before clicking, otherwise this app won't work until you restart it)</Label>
-                    <Label FontSize="8" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,5,0,0">How to configure f.lux:</Label>
-                    <Label FontSize="6" HorizontalAlignment="Center">1. Open f.lux's options window</Label>
-                    <Label FontSize="6" HorizontalAlignment="Center">2. Go to the "Connected Lighting" tab</Label>
-                    <Label FontSize="6" HorizontalAlignment="Center">3. Put "http://localhost:8000/" in the "Post to this URL [...]" textbox</Label>
-                    <Label FontSize="6" HorizontalAlignment="Center">4. That's it! Initiate connection!</Label>
+    <Window.Resources>
+        <Style TargetType="{x:Type Label}">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Foreground" Value="#FFEAEEF7"/>
+        </Style>
+    </Window.Resources>
+
+    <Border CornerRadius="25"
+            BorderThickness="3">
+
+        <Border.BorderBrush>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#FF6589E2" Offset="0"/>
+                <GradientStop Color="#FFE4CA91" Offset="0.75"/>
+                <GradientStop Color="#FFA26941" Offset="1"/>
+            </LinearGradientBrush>
+        </Border.BorderBrush>
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#FF455167" Offset="1"/>
+                <GradientStop Color="#FF756351" Offset="0"/>
+            </LinearGradientBrush>
+        </Border.Background>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="7"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="40"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="20"/>
+            </Grid.ColumnDefinitions>
+
+            <Button x:Name="btnClose"
+                    BorderThickness="0"
+                    Content="X"
+                    FontSize="12"
+                    Cursor="Hand"
+                    Grid.Column="2"
+                    Click="CloseButton_Click">
+
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="#FF768FDC"/>
+                        <Setter Property="Foreground" Value="#FFEAEEF7"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#FFB4C2ED"/>
+                                <Setter Property="Foreground" Value="#FF3089FF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#FF7C839A"/>
+                                <Setter Property="Foreground" Value="#FFA8CDFF"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Width="20" Height="20"
+                                CornerRadius="10"
+                                Background="{TemplateBinding Background}">
+                            <ContentPresenter VerticalAlignment="Center"
+                                              HorizontalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <Label x:Name="StatusText" Grid.Column="1" FontSize="12" VerticalContentAlignment="Bottom" 
+                   Foreground="{Binding Path=StatusColor}" 
+                   Content="{Binding Path=Status}"/>
+
+            <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="1">
+                <StackPanel x:Name="NeedAccess">
+                    <Label x:Name="BridgeSearchText" Margin="0,15,0,0" HorizontalAlignment="Center" FontStyle="Italic" FontWeight="Light" Visibility="Collapsed">
+                        Looking for Hue Bridge...
+                    </Label>
+                    <Label x:Name="BridgeSearchFailedText" Margin="0,15,0,0" HorizontalAlignment="Center" Foreground="#FFFF1111" Visibility="Collapsed">
+                        No Hue Bridge was found on the local network of this computer
+                    </Label>
+                    <StackPanel x:Name="BridgeAppKeyRetrival" Margin="0,15,0,0">
+                        <Label x:Name="AppKeyRetrievalHeaderText" HorizontalAlignment="Center" FontWeight="Bold" Foreground="#FF57C568">Hue Bridge Found!</Label>
+                        <StackPanel x:Name="ConnectionButtonPanel" Margin="0,5,0,0">
+                            <Button x:Name="ConnectionButton" Click="ConnectionButton_Click"
+                                HorizontalContentAlignment="Center" Cursor="Hand">
+                                Click here to link to the Bridge
+
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Background" Value="#FF768FDC"/>
+                                        <Setter Property="Foreground" Value="#FFEAEEF7"/>
+                                        <Setter Property="FontSize" Value="16"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#FFB4C2ED"/>
+                                                <Setter Property="Foreground" Value="#FF3089FF"/>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter Property="Background" Value="#FF7C839A"/>
+                                                <Setter Property="Foreground" Value="#FFA8CDFF"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Width="270" Height="40"
+                                                CornerRadius="10"
+                                                Background="{TemplateBinding Background}">
+                                            <ContentPresenter VerticalAlignment="Center"
+                                                              HorizontalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <Label HorizontalAlignment="Center" FontWeight="DemiBold" x:Name="ConfigureFluxDisclaimerText" Foreground="#FFED4545" FontSize="14">(Configure f.lux before clicking, otherwise this app won't work until you restart it)</Label>
+                            <Label HorizontalAlignment="Center" FontWeight="Bold" Margin="0,30,0,0">How to configure f.lux:</Label>
+                            <StackPanel HorizontalAlignment="Center" Margin="50,0,0,0">
+                                <Label>1. Open f.lux's options window</Label>
+                                <Label>2. Go to the "Connected Lighting" tab</Label>
+                                <Label>3. Put "http://localhost:8000/" in the "Post to this URL [...]" textbox</Label>
+                                <Label>4. That's it!</Label>
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel x:Name="BridgeLinkingText" Margin="0,10,0,0" Visibility="Collapsed">
+                            <Label HorizontalAlignment="Center" FontWeight="Bold">Linking process underway</Label>
+                            <Label HorizontalAlignment="Center" Foreground="#FFFFEA00">Press the link button on your Hue Bridge to complete the link</Label>
+                        </StackPanel>
+                    </StackPanel>
                 </StackPanel>
-                <StackPanel x:Name="BridgeLinkingText" Margin="0,10,0,0" Visibility="Collapsed">
-                    <Label HorizontalAlignment="Center" FontWeight="Bold">Linking process underway</Label>
-                    <Label HorizontalAlignment="Center">Press the link button on your Hue Bridge to complete the link</Label>
+                <StackPanel x:Name="HasAccess" Visibility="Collapsed">
+                <Label FontWeight="Bold" HorizontalAlignment="Center">
+                    BRIDGE LINKED BOIIISSS!!!!!
+                </Label>
+            </StackPanel>
+                <StackPanel x:Name="ConnectionFailed" Margin="0,50,0,0" Visibility="Collapsed">
+                    <Label HorizontalAlignment="Center">Something went wrong when establishing a connection with the Hue Bridge</Label>
+                    <Label HorizontalAlignment="Center">The app needs to be reset and restarted</Label>
+                    <Label HorizontalAlignment="Center">Click the button below to reset and exit the app</Label>
+                    <Button x:Name="ResetButton" Click="ResetButton_Click" Margin="0,20,0,0"
+                                    HorizontalContentAlignment="Center" Cursor="Hand">
+                            Reset &amp; Exit
+
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="#FF768FDC"/>
+                                    <Setter Property="Foreground" Value="#FFEAEEF7"/>
+                                    <Setter Property="FontSize" Value="16"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#FFB4C2ED"/>
+                                            <Setter Property="Foreground" Value="#FF3089FF"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter Property="Background" Value="#FF7C839A"/>
+                                            <Setter Property="Foreground" Value="#FFA8CDFF"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Width="150" Height="40"
+                                                    CornerRadius="10"
+                                                    Background="{TemplateBinding Background}">
+                                        <ContentPresenter VerticalAlignment="Center"
+                                                                  HorizontalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
                 </StackPanel>
             </StackPanel>
-        </StackPanel>
-        <StackPanel x:Name="HasAccess" Visibility="Visible">
-            <Label FontWeight="Bold" HorizontalAlignment="Center">
-                BRIDGE LINKED BOIIISSS!!!!!
-            </Label>
-        </StackPanel>
-        <StackPanel x:Name="ConnectionFailed" Visibility="Collapsed" Margin="0,50,0,0">
-            <Label HorizontalAlignment="Center">Something went wrong when establishing a connection with Hue</Label>
-            <Label HorizontalAlignment="Center">The app needs to be reset and restarted</Label>
-            <Label HorizontalAlignment="Center">Click the button below to reset and exit the app</Label>
-            <Button x:Name="ResetButton" Margin="190,10,190,0" Click="ResetButton_Click">
-                Reset &amp; Exit
-            </Button>
-        </StackPanel>
-    </StackPanel>
-    
+        </Grid>
+    </Border>
 </Window>
