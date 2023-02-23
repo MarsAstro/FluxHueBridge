@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:fa="http://schemas.fontawesome.com/icons/"
         mc:Ignorable="d"
         Title="f.lux Hue Bridge" Height="400" Width="700"
         Icon="Resources/Icon.ico"
@@ -18,25 +19,27 @@
             <Setter Property="FontSize" Value="16" />
             <Setter Property="Foreground" Value="#FFEAEEF7"/>
         </Style>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#FF768FDC"/>
+            <Setter Property="Foreground" Value="#FFEAEEF7"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#FFB4C2ED"/>
+                    <Setter Property="Foreground" Value="#FF3089FF"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#FF7C839A"/>
+                    <Setter Property="Foreground" Value="#FFA8CDFF"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#FFB7B7B7"/>
+                    <Setter Property="Foreground" Value="#FFD4D4D4"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
-    <Border CornerRadius="25"
-            BorderThickness="3">
-
-        <Border.BorderBrush>
-            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#FF6589E2" Offset="0"/>
-                <GradientStop Color="#FFE4CA91" Offset="0.75"/>
-                <GradientStop Color="#FFA26941" Offset="1"/>
-            </LinearGradientBrush>
-        </Border.BorderBrush>
-        <Border.Background>
-            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#FF455167" Offset="1"/>
-                <GradientStop Color="#FF756351" Offset="0"/>
-            </LinearGradientBrush>
-        </Border.Background>
-
+    <Border CornerRadius="25" BorderThickness="3" Background="{StaticResource WindowBackground}" BorderBrush="{StaticResource BorderGradient}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="30"/>
@@ -57,34 +60,21 @@
                     FontSize="12"
                     Cursor="Hand"
                     Grid.Column="2"
-                    Click="CloseButton_Click">
-
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#FF768FDC"/>
-                        <Setter Property="Foreground" Value="#FFEAEEF7"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#FFB4C2ED"/>
-                                <Setter Property="Foreground" Value="#FF3089FF"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#FF7C839A"/>
-                                <Setter Property="Foreground" Value="#FFA8CDFF"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-                <Button.Template>
-                    <ControlTemplate TargetType="Button">
-                        <Border Width="20" Height="20"
-                                CornerRadius="10"
-                                Background="{TemplateBinding Background}">
-                            <ContentPresenter VerticalAlignment="Center"
-                                              HorizontalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
+                    Click="CloseButton_Click"
+                    Width="20" Height="20"
+                    Template="{StaticResource ButtonTemplate}">
+            </Button>
+            <Button x:Name="btnExit"
+                    BorderThickness="0"
+                    Content="Quit"
+                    FontSize="12"
+                    Template="{StaticResource ButtonTemplate}"
+                    Cursor="Hand"
+                    Grid.Column="1"
+                    Grid.Row="2"
+                    HorizontalAlignment="Left"
+                    Click="QuitButton_Click"
+                    Width="40" Height="20">
             </Button>
 
             <Label x:Name="StatusText" Grid.Column="1" FontSize="12" VerticalContentAlignment="Bottom" 
@@ -92,7 +82,7 @@
                    Content="{Binding Path=Status}"/>
 
             <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="1">
-                <StackPanel x:Name="NeedAccess">
+                <StackPanel x:Name="NeedAccess" Visibility="Collapsed">
                     <Label x:Name="BridgeSearchText" Margin="0,15,0,0" HorizontalAlignment="Center" FontStyle="Italic" FontWeight="Light" Visibility="Collapsed">
                         Looking for Hue Bridge...
                     </Label>
@@ -103,36 +93,10 @@
                         <Label x:Name="AppKeyRetrievalHeaderText" HorizontalAlignment="Center" FontWeight="Bold" Foreground="#FF57C568">Hue Bridge Found!</Label>
                         <StackPanel x:Name="ConnectionButtonPanel" Margin="0,5,0,0">
                             <Button x:Name="ConnectionButton" Click="ConnectionButton_Click"
-                                HorizontalContentAlignment="Center" Cursor="Hand">
+                                    HorizontalContentAlignment="Center" Cursor="Hand" Width="270" Height="40"
+                                    Template="{StaticResource ButtonTemplate}">
+                                
                                 Click here to link to the Bridge
-
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Background" Value="#FF768FDC"/>
-                                        <Setter Property="Foreground" Value="#FFEAEEF7"/>
-                                        <Setter Property="FontSize" Value="16"/>
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="#FFB4C2ED"/>
-                                                <Setter Property="Foreground" Value="#FF3089FF"/>
-                                            </Trigger>
-                                            <Trigger Property="IsPressed" Value="True">
-                                                <Setter Property="Background" Value="#FF7C839A"/>
-                                                <Setter Property="Foreground" Value="#FFA8CDFF"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border Width="270" Height="40"
-                                                CornerRadius="10"
-                                                Background="{TemplateBinding Background}">
-                                            <ContentPresenter VerticalAlignment="Center"
-                                                              HorizontalAlignment="Center"/>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Button.Template>
                             </Button>
                             <Label HorizontalAlignment="Center" FontWeight="DemiBold" x:Name="ConfigureFluxDisclaimerText" Foreground="#FFED4545" FontSize="14">(Configure f.lux before clicking, otherwise this app won't work until you restart it)</Label>
                             <Label HorizontalAlignment="Center" FontWeight="Bold" Margin="0,30,0,0">How to configure f.lux:</Label>
@@ -149,47 +113,115 @@
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
-                <StackPanel x:Name="HasAccess" Visibility="Collapsed">
-                <Label FontWeight="Bold" HorizontalAlignment="Center">
-                    BRIDGE LINKED BOIIISSS!!!!!
-                </Label>
-            </StackPanel>
+                <Grid x:Name="HasAccess" Margin="0,20,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="32" />
+                        <RowDefinition Height="22" />
+                        <RowDefinition Height="60" />
+                        <RowDefinition Height="170" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="180" />
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="15" />
+                        <ColumnDefinition Width="210"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Label Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">Scene name (in Hue App)</Label>
+                    <TextBox Grid.Row="1" Grid.Column="0" x:Name="NameTextBox" TextChanged="NameTextbox_TextChanged" 
+                             Background="#FF4B5367" Foreground="#FFEAEEF7" BorderBrush="{StaticResource BorderGradient}">
+                        
+                        f.lux
+
+                        <TextBox.Resources>
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </TextBox.Resources>
+                    </TextBox>
+                    <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="5,0,0,0">
+                        <fa:SvgAwesome x:Name="NameSpinner" Icon="Solid_Spinner" Spin="True" Height="20" Width="20" Foreground="#FFFFEA00" Visibility="Collapsed"/>
+                        <fa:SvgAwesome x:Name="NameCheck" Icon="Solid_Check" Height="20" Width="20" Foreground="#FF57C568"/>
+                    </StackPanel>
+                    
+                    <Label Grid.Row="0" Grid.Column="3">Color (compared to screen)</Label>
+                    <ComboBox Style="{DynamicResource ComboBoxStyle}" x:Name="MiredShiftSelection" Grid.Row="1" Grid.Column="3" SelectionChanged="MiredShiftSelection_SelectionChanged" Template="{DynamicResource ComboBoxTemplate}" >
+                        <ComboBoxItem x:Name="QuiteWarmerSetting">Quite a bit warmer (default)</ComboBoxItem>
+                        <ComboBoxItem x:Name="SlightlyWarmerSetting">Slightly warmer</ComboBoxItem>
+                        <ComboBoxItem x:Name="MatchScreenSetting">Match screen exactly</ComboBoxItem>
+                    </ComboBox>
+
+                    <Label Grid.Row="2" Grid.ColumnSpan="2" VerticalAlignment="Bottom">Applied on startup (or by pressing button)</Label>
+                    <ListView Grid.Row="3" Grid.ColumnSpan="2" ItemsSource="{Binding Path=SceneSwitchActions}" 
+                              Background="#FF4B5367" Foreground="#FFEAEEF7" BorderBrush="{StaticResource BorderGradient}">
+                        
+                        <ListView.View>
+                            <GridView>
+                                <GridView.ColumnHeaderContainerStyle>
+                                    <Style TargetType="{x:Type GridViewColumnHeader}">
+                                        <Setter Property="Foreground" Value="#FFEAEEF7" />
+                                        <Setter Property="Background" Value="#FF3C4354" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="{x:Type GridViewColumnHeader}">
+                                                    <TextBlock Background="{TemplateBinding Background}" Text="{TemplateBinding Content}" Padding="5" Width="{TemplateBinding Width}" TextAlignment="Left"/>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </GridView.ColumnHeaderContainerStyle>
+                                <GridViewColumn Width="305" Header="Room/Zone" DisplayMemberBinding="{Binding Path=Name}" />
+                                <GridViewColumn Width="72" Header="Apply Scene">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <DockPanel>
+                                                <CheckBox HorizontalAlignment="Center" HorizontalContentAlignment="Center" IsChecked="{Binding Path=ShouldSwitch}" Checked="ApplySceneCheckbox_Check" Unchecked="ApplySceneCheckbox_Check"/>
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn> 
+                            </GridView>
+                        </ListView.View>
+
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="Focusable" Value="False"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderBrush">
+                                            <Setter.Value>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                    <GradientStop Color="#FFA26941" Offset="0"/>
+                                                    <GradientStop Color="#FFE4CA91" Offset="0.25"/>
+                                                    <GradientStop Color="#FF6589E2" Offset="1"/>
+                                                </LinearGradientBrush>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                    </ListView>
+
+                    <Button x:Name="ApplyButton" Click="ApplyButton_Click" FontSize="16"
+                            HorizontalContentAlignment="Center" Cursor="Hand"
+                            Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2"
+                            Width="160" Height="40" Template="{StaticResource ButtonTemplate}">
+                        
+                            Apply scene now
+                    </Button>
+                </Grid>
                 <StackPanel x:Name="ConnectionFailed" Margin="0,50,0,0" Visibility="Collapsed">
                     <Label HorizontalAlignment="Center">Something went wrong when establishing a connection with the Hue Bridge</Label>
                     <Label HorizontalAlignment="Center">The app needs to be reset and restarted</Label>
                     <Label HorizontalAlignment="Center">Click the button below to reset and exit the app</Label>
-                    <Button x:Name="ResetButton" Click="ResetButton_Click" Margin="0,20,0,0"
-                                    HorizontalContentAlignment="Center" Cursor="Hand">
-                            Reset &amp; Exit
-
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Setter Property="Background" Value="#FF768FDC"/>
-                                    <Setter Property="Foreground" Value="#FFEAEEF7"/>
-                                    <Setter Property="FontSize" Value="16"/>
-                                    <Style.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Background" Value="#FFB4C2ED"/>
-                                            <Setter Property="Foreground" Value="#FF3089FF"/>
-                                        </Trigger>
-                                        <Trigger Property="IsPressed" Value="True">
-                                            <Setter Property="Background" Value="#FF7C839A"/>
-                                            <Setter Property="Foreground" Value="#FFA8CDFF"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Button.Style>
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border Width="150" Height="40"
-                                                    CornerRadius="10"
-                                                    Background="{TemplateBinding Background}">
-                                        <ContentPresenter VerticalAlignment="Center"
-                                                                  HorizontalAlignment="Center"/>
-                                    </Border>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
+                    <Button x:Name="ResetButton" Click="ResetButton_Click" Margin="0,20,0,0" Width="150" Height="40"
+                            HorizontalContentAlignment="Center" Cursor="Hand" FontSize="16" Template="{StaticResource ButtonTemplate}">
+                        
+                        Reset &amp; Exit
+                    </Button>
                 </StackPanel>
             </StackPanel>
         </Grid>

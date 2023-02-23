@@ -10,9 +10,9 @@ namespace FluxHueBridge
     {
         public enum MiredShiftType
         {
-            MatchScreen,
-            ALittleWarmer,
-            QuiteABitWarmer
+            QuiteABitWarmer,
+            SlightlyWarmer,
+            MatchScreen
         }
 
         public static MiredShiftType GetMiredShiftType()
@@ -31,7 +31,7 @@ namespace FluxHueBridge
             switch(GetMiredShiftType())
             {
                 case MiredShiftType.MatchScreen: return 0f;
-                case MiredShiftType.ALittleWarmer: return 45f;
+                case MiredShiftType.SlightlyWarmer: return 45f;
                 case MiredShiftType.QuiteABitWarmer: return 90f;
                 default: return 0f;
             }

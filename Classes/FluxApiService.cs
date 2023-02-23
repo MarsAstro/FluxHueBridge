@@ -56,7 +56,7 @@ namespace FluxHueBridge
                     var adaptedBrightness = Math.Round(Math.Clamp(float.Parse(brightness) * 100f, 0f, 100f), 1);
                     adaptedBrightness = CorrectBrightness(adaptedBrightness);
 
-                    await _hueApiService.UpdateScenes(int.Parse(colorTemp), adaptedBrightness);
+                    await _hueApiService.UpdateScenes(int.Parse(colorTemp), adaptedBrightness, false);
                 }
             }
             catch (Exception e)

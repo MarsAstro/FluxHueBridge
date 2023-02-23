@@ -4,7 +4,7 @@
                     xmlns:local="clr-namespace:FluxHueBridge">
 
     <ContextMenu x:Shared="false" x:Key="ContextMenu">
-        <MenuItem Header="Options" Command="{Binding ShowWindowCommand}" />
+        <MenuItem Header="Open Window" Command="{Binding ShowWindowCommand}" />
         <Separator />
         <MenuItem Header="Quit f.lux Hue Bridge" Command="{Binding ExitApplicationCommand}" />
     </ContextMenu>

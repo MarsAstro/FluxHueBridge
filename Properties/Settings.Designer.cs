@@ -61,19 +61,7 @@ namespace FluxHueBridge.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("f.lux")]
-        public string PrevSceneName {
-            get {
-                return ((string)(this["PrevSceneName"]));
-            }
-            set {
-                this["PrevSceneName"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
         public int MiredShiftType {
             get {
                 return ((int)(this["MiredShiftType"]));
@@ -85,13 +73,13 @@ namespace FluxHueBridge.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool SwitchOnStartup {
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string SceneSwitchJSON {
             get {
-                return ((bool)(this["SwitchOnStartup"]));
+                return ((string)(this["SceneSwitchJSON"]));
             }
             set {
-                this["SwitchOnStartup"] = value;
+                this["SceneSwitchJSON"] = value;
             }
         }
     }

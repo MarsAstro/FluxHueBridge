@@ -32,6 +32,18 @@ namespace FluxHueBridge
         public Recall? Recall { get; set; }
     }
 
+    public partial class SceneNamePut
+    {
+        [JsonPropertyName("metadata")]
+        public SceneMetadata Metadata { get; set; } = new SceneMetadata();
+    }
+
+    public partial class SceneRecallPut
+    {
+        [JsonPropertyName("recall")]
+        public Recall Recall { get; set; } = new Recall();
+    }
+
     public partial class Recall
     {
         [JsonPropertyName("action")]

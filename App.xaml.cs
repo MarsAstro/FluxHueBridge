@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -21,9 +22,6 @@ namespace FluxHueBridge
 
         protected override void OnStartup(StartupEventArgs e)
         {
-            FluxHueBridge.Properties.Settings.Default.Reset();
-            FluxHueBridge.Properties.Settings.Default.Save();
-
             HueApiService = new HueApiService();
             FluxApiService  = new FluxApiService(HueApiService);
 
@@ -55,27 +53,35 @@ namespace FluxHueBridge
 
         private async Task HandleConnectionResult(bool didConnect)
         {
-            if (didConnect && HueApiService != null)
-            {
-                var sceneSetupSuccessful = await HueApiService.InitializeScenes();
-
-                if (sceneSetupSuccessful) 
-                    FluxApiService?.Start();
-            }
-            else
+            await Dispatcher.Invoke<Task>(async () =>
             {
                 MainWindow? window = null;
 
-                if (MainWindow != null)
+                if (MainWindow != null && MainWindow.IsVisible && MainWindow is MainWindow)
                     window = MainWindow as MainWindow;
+
+                if (didConnect && HueApiService != null)
+                {
+                    var sceneSetupSuccessful = await HueApiService.InitializeScenes();
+
+                    if (!sceneSetupSuccessful) return;
+
+                    if (window != null) 
+                        window.SceneSwitchActions = JsonSerializer.Deserialize<SceneSwitchList>(FluxHueBridge.Properties.Settings.Default.SceneSwitchJSON)?.SceneSwitches;
+
+                    FluxApiService?.Start();
+                }
                 else
-                    window = new MainWindow();
+                {
+                    if (window == null)
+                        window = new MainWindow();
 
-                window?.ConnectionErrorState();
+                    window.ConnectionErrorState();
 
-                MainWindow = window;
-                MainWindow?.Show();
-            }
+                    MainWindow = window;
+                    MainWindow.Show();
+                }
+            });
         }
 
         protected override void OnExit(ExitEventArgs e)

@@ -8,12 +8,36 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Windows;
+using System.Threading;
 
 namespace FluxHueBridge
 {
     public class HueApiService
     {
         public bool IsReady => _httpClient.BaseAddress != null;
+
+        private bool _hasReceivedData = false;
+        public bool HasReceivedData
+        {
+            get => _hasReceivedData;
+            private set
+            {
+                if (_hasReceivedData != value && value == true) 
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (Application.Current.MainWindow != null && Application.Current.MainWindow is MainWindow)
+                        {
+                            var window = Application.Current.MainWindow as MainWindow;
+                            window?.ConnectionSuccessState();
+                        }
+
+                        _hasReceivedData = value;
+                    });
+                }
+            }
+        }
 
         private IPAddress? _bridgeIP;
         private HttpClient _httpClient = new HttpClient();
@@ -24,9 +48,11 @@ namespace FluxHueBridge
         private LightColor? _prevColor = null;
         private List<Guid> _sceneIds = new List<Guid>();
 
-        private bool _isUpdating = false;
+        private bool _isDoingSceneWork = false;
         private Stopwatch _sceneWatch = new Stopwatch();
         private Stopwatch _lightWatch = new Stopwatch();
+
+        private readonly SemaphoreSlim _sceneLock = new SemaphoreSlim(1,1);
 
         public HueApiService()
         {
@@ -38,11 +64,52 @@ namespace FluxHueBridge
                 SetupHttpClient(appKey, _bridgeIP.ToString());
         }
 
-        public async Task UpdateScenes(int kelvin, double brightness)
+        public async Task ApplyScenes()
         {
-            if (_isUpdating || kelvin.Equals(_prevKelvin) || _sceneIds.Count == 0) return;
+            if (_prevBrightness == null || _prevColor == null) return;
 
-            _isUpdating = true;
+            var switchList = JsonSerializer.Deserialize<SceneSwitchList>(Properties.Settings.Default.SceneSwitchJSON);
+
+            if (switchList == null || switchList.SceneSwitches.Count == 0) return;
+
+            var scenesToApply = switchList.SceneSwitches.Where(sw => sw.ShouldSwitch).Select(sw => sw.SceneId).ToList();
+
+            if (scenesToApply.Count == 0) return;
+
+            await _sceneLock.WaitAsync();
+            _isDoingSceneWork = true;
+
+            var json = JsonSerializer.Serialize(new SceneRecallPut());
+            var body = new StringContent(json, Encoding.UTF8, "application/json");
+
+            foreach (var sceneId in scenesToApply)
+            {
+                await Task.Delay(GetRequestDelayMS(_sceneWatch, 1000));
+
+                await _httpClient.PutAsync("scene/" + sceneId, body);
+
+                _sceneWatch.Restart();
+            }
+
+            _sceneWatch.Stop();
+
+            _isDoingSceneWork = false;
+            _sceneLock.Release();
+        }
+
+        public async Task ForceSceneUpdate()
+        {
+            if (_prevKelvin == null || _prevBrightness == null) return;
+
+            await UpdateScenes(_prevKelvin.Value, _prevBrightness.Value, true);
+        }
+
+        public async Task UpdateScenes(int kelvin, double brightness, bool overrideSkip)
+        {
+            if (_sceneIds.Count == 0 || !overrideSkip && (_isDoingSceneWork || kelvin.Equals(_prevKelvin))) return;
+
+            await _sceneLock.WaitAsync();
+            _isDoingSceneWork = true;
 
             var lightColor = LightColorCalculator.GetLightColorFromKelvin(kelvin);
 
@@ -75,7 +142,30 @@ namespace FluxHueBridge
             _prevBrightness = brightness;
             _prevColor = lightColor;
 
-            _isUpdating = false;
+            HasReceivedData = true;
+
+            _isDoingSceneWork = false;
+            _sceneLock.Release();
+        }
+
+        public async Task UpdateSceneNames(string newName)
+        {
+            Properties.Settings.Default.SceneName = newName;
+            Properties.Settings.Default.Save();
+
+            var stopWatch = new Stopwatch();
+
+            foreach (var sceneId in _sceneIds)
+            {
+                var json = JsonSerializer.Serialize(new SceneNamePut());
+                var body = new StringContent(json, encoding: Encoding.UTF8, "application/json");
+
+                await Task.Delay(GetRequestDelayMS(stopWatch, 1000));
+
+                await _httpClient.PutAsync("scene/" + sceneId, body);
+
+                stopWatch.Restart();
+            }
         }
 
         private async Task<string?> GenerateJsonForScenePut(int kelvin, double brightness, Guid sceneId, LightColor lightColor)
@@ -88,8 +178,13 @@ namespace FluxHueBridge
             if (scenes == null || scenes.Count == 0) return null;
 
             var areLightsUnchanged = true;
+            var applyOnStartup = false;
+            
+            if (!HasReceivedData)
+                applyOnStartup = JsonSerializer.Deserialize<SceneSwitchList>(Properties.Settings.Default.SceneSwitchJSON)?
+                    .SceneSwitches.FirstOrDefault(sw => sw.SceneId == sceneId)?.ShouldSwitch ?? false;
 
-            foreach(var action in scenes.First().Actions.Where(action => action.Target.Rtype.Equals("light")))
+            foreach (var action in scenes.First().Actions.Where(action => action.Target.Rtype.Equals("light")))
             {
                 var newAction = new ActionElement();
                 newAction.Target = new Group() { Rid = action.Target.Rid, Rtype = "light" };
@@ -104,7 +199,7 @@ namespace FluxHueBridge
 
                 scenePut.Actions.Add(newAction);
 
-                areLightsUnchanged &= await IsLightEqualToPrevScene(action.Target.Rid, lightColor);
+                areLightsUnchanged &= await IsLightEqualToPrevScene(action.Target.Rid, lightColor, applyOnStartup);
             }
 
             if (areLightsUnchanged) scenePut.Recall = new Recall();
@@ -113,9 +208,9 @@ namespace FluxHueBridge
             return scenePut.Actions.Count() > 0 ? JsonSerializer.Serialize(scenePut) : null;
         }
 
-        private async Task<bool> IsLightEqualToPrevScene(Guid lightId, LightColor lightColor)
+        private async Task<bool> IsLightEqualToPrevScene(Guid lightId, LightColor lightColor, bool applyOnStartup)
         {
-            if (_prevBrightness == null || _prevColor == null) return Properties.Settings.Default.SwitchOnStartup;
+            if (_prevBrightness == null || _prevColor == null) return applyOnStartup;
 
             try
             {
@@ -216,7 +311,7 @@ namespace FluxHueBridge
 
         public async Task<bool> InitializeScenes()
         {
-            if (_httpClient== null) return false;
+            if (_httpClient == null) return false;
 
             try
             {
@@ -231,10 +326,24 @@ namespace FluxHueBridge
 
                 var roomAndZoneCount = rooms.Count() + zones.Count();
 
-                RemoveRoomsAndZonesWithFluxScenes(scenes, rooms, zones);
+                var sceneSwitchJSON = Properties.Settings.Default.SceneSwitchJSON;
+                var sceneSwitchList = string.IsNullOrWhiteSpace(sceneSwitchJSON) 
+                    ? new SceneSwitchList() 
+                    : JsonSerializer.Deserialize<SceneSwitchList>(sceneSwitchJSON);
 
-                await AddFluxSceneToGroups(rooms);
-                await AddFluxSceneToGroups(zones);
+                if (sceneSwitchList == null) return false;
+
+                RemoveRoomsAndZonesWithFluxScenes(scenes, rooms, zones, sceneSwitchList);
+
+                await AddFluxSceneToGroups(rooms, sceneSwitchList);
+                await AddFluxSceneToGroups(zones, sceneSwitchList);
+
+                var newSceneSwitchJSON = JsonSerializer.Serialize(sceneSwitchList);
+                if (!newSceneSwitchJSON.Equals(sceneSwitchJSON))
+                {
+                    Properties.Settings.Default.SceneSwitchJSON = newSceneSwitchJSON;
+                    Properties.Settings.Default.Save();
+                }
 
                 if (_sceneIds.Count == roomAndZoneCount)
                     return true;
@@ -250,7 +359,7 @@ namespace FluxHueBridge
             }
         }
 
-        private async Task AddFluxSceneToGroups(List<GroupData> groups)
+        private async Task AddFluxSceneToGroups(List<GroupData> groups, SceneSwitchList sceneSwitchList)
         {
             foreach (var group in groups)
             {
@@ -271,7 +380,12 @@ namespace FluxHueBridge
 
                 if (jsonObject == null || jsonObject.Data.Length == 0) continue;
 
-                _sceneIds.Add(jsonObject.Data.First().Rid);
+                var newId = jsonObject.Data.First().Rid;
+                var newName = group.Metadata.Name;
+
+                _sceneIds.Add(newId);
+
+                sceneSwitchList.SceneSwitches.Add(new SceneSwitchAction() { SceneId = newId, Name = newName });
             }
         }
 
@@ -323,7 +437,7 @@ namespace FluxHueBridge
             return null;
         }
 
-        private void RemoveRoomsAndZonesWithFluxScenes(List<SceneData> scenes, List<GroupData> rooms, List<GroupData> zones)
+        private void RemoveRoomsAndZonesWithFluxScenes(List<SceneData> scenes, List<GroupData> rooms, List<GroupData> zones, SceneSwitchList sceneSwitchList)
         {
             foreach (var scene in scenes)
             {
@@ -331,6 +445,10 @@ namespace FluxHueBridge
                 if (roomWithScene != null)
                 {
                     _sceneIds.Add(scene.Id);
+
+                    if (!sceneSwitchList.SceneSwitches.Any(sw => sw.SceneId == scene.Id))
+                        sceneSwitchList.SceneSwitches.Add(new SceneSwitchAction() { SceneId = scene.Id, Name = roomWithScene.Metadata.Name });
+
                     rooms.Remove(roomWithScene);
                     continue;
                 }
@@ -339,6 +457,10 @@ namespace FluxHueBridge
                 if (zoneWithScene != null)
                 {
                     _sceneIds.Add(scene.Id);
+
+                    if (!sceneSwitchList.SceneSwitches.Any(sw => sw.SceneId == scene.Id))
+                        sceneSwitchList.SceneSwitches.Add(new SceneSwitchAction() { SceneId = scene.Id, Name = zoneWithScene.Metadata.Name });
+
                     zones.Remove(zoneWithScene);
                     continue;
                 }
