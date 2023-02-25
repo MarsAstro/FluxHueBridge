@@ -92,7 +92,7 @@
                     <StackPanel x:Name="BridgeAppKeyRetrival" Margin="0,15,0,0">
                         <Label x:Name="AppKeyRetrievalHeaderText" HorizontalAlignment="Center" FontWeight="Bold" Foreground="#FF57C568">Hue Bridge Found!</Label>
                         <StackPanel x:Name="ConnectionButtonPanel" Margin="0,5,0,0">
-                            <Button x:Name="ConnectionButton" Click="ConnectionButton_Click"
+                            <Button x:Name="ConnectionButton" Click="ConnectionButton_Click" FontSize="16"
                                     HorizontalContentAlignment="Center" Cursor="Hand" Width="270" Height="40"
                                     Template="{StaticResource ButtonTemplate}">
                                 
@@ -185,20 +185,28 @@
 
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
+                                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
                                 <Setter Property="Focusable" Value="False"/>
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                            <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" 
+                                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                                Background="{TemplateBinding Background}" 
+                                                SnapsToDevicePixels="true">
+                                                <GridViewRowPresenter 
+                                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                                    SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
                                 <Style.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="Transparent"/>
-                                        <Setter Property="BorderBrush">
-                                            <Setter.Value>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                    <GradientStop Color="#FFA26941" Offset="0"/>
-                                                    <GradientStop Color="#FFE4CA91" Offset="0.25"/>
-                                                    <GradientStop Color="#FF6589E2" Offset="1"/>
-                                                </LinearGradientBrush>
-                                            </Setter.Value>
-                                        </Setter>
+                                        <Setter Property="Background" Value="#FF575F75" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource BorderGradient}" />
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>

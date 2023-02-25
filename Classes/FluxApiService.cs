@@ -78,7 +78,7 @@ namespace FluxHueBridge
             var path = process.First().MainModule?.FileName;
             
             process.First().Kill();
-            Process.Start(path ?? "");
+            Process.Start(path ?? "", "/noshow");
         }
 
         //Convert brightness from range of 30-100 (the one f.lux sends) to 52-100 (the one f.lux actually uses)

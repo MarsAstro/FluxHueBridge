@@ -101,6 +101,10 @@ namespace FluxHueBridge
         {
             if (_prevKelvin == null || _prevBrightness == null) return;
 
+            await _sceneLock.WaitAsync();
+            _isDoingSceneWork = true;
+            _sceneLock.Release();
+
             await UpdateScenes(_prevKelvin.Value, _prevBrightness.Value, true);
         }
 
@@ -326,20 +330,22 @@ namespace FluxHueBridge
 
                 var roomAndZoneCount = rooms.Count() + zones.Count();
 
-                var sceneSwitchJSON = Properties.Settings.Default.SceneSwitchJSON;
-                var sceneSwitchList = string.IsNullOrWhiteSpace(sceneSwitchJSON) 
+                var oldSceneSwitchJSON = Properties.Settings.Default.SceneSwitchJSON;
+                var oldSceneSwitchList = string.IsNullOrWhiteSpace(oldSceneSwitchJSON) 
                     ? new SceneSwitchList() 
-                    : JsonSerializer.Deserialize<SceneSwitchList>(sceneSwitchJSON);
+                    : JsonSerializer.Deserialize<SceneSwitchList>(oldSceneSwitchJSON);
 
-                if (sceneSwitchList == null) return false;
+                if (oldSceneSwitchList == null) return false;
 
-                RemoveRoomsAndZonesWithFluxScenes(scenes, rooms, zones, sceneSwitchList);
+                var newSceneSwitchList = new SceneSwitchList();
 
-                await AddFluxSceneToGroups(rooms, sceneSwitchList);
-                await AddFluxSceneToGroups(zones, sceneSwitchList);
+                RemoveRoomsAndZonesWithFluxScenes(scenes, rooms, zones, oldSceneSwitchList, newSceneSwitchList);
 
-                var newSceneSwitchJSON = JsonSerializer.Serialize(sceneSwitchList);
-                if (!newSceneSwitchJSON.Equals(sceneSwitchJSON))
+                await AddFluxSceneToGroups(rooms, newSceneSwitchList);
+                await AddFluxSceneToGroups(zones, newSceneSwitchList);
+
+                var newSceneSwitchJSON = JsonSerializer.Serialize(newSceneSwitchList);
+                if (!newSceneSwitchJSON.Equals(oldSceneSwitchJSON))
                 {
                     Properties.Settings.Default.SceneSwitchJSON = newSceneSwitchJSON;
                     Properties.Settings.Default.Save();
@@ -437,7 +443,7 @@ namespace FluxHueBridge
             return null;
         }
 
-        private void RemoveRoomsAndZonesWithFluxScenes(List<SceneData> scenes, List<GroupData> rooms, List<GroupData> zones, SceneSwitchList sceneSwitchList)
+        private void RemoveRoomsAndZonesWithFluxScenes(List<SceneData> scenes, List<GroupData> rooms, List<GroupData> zones, SceneSwitchList oldSceneSwitchList, SceneSwitchList newSceneSwitchList)
         {
             foreach (var scene in scenes)
             {
@@ -446,8 +452,9 @@ namespace FluxHueBridge
                 {
                     _sceneIds.Add(scene.Id);
 
-                    if (!sceneSwitchList.SceneSwitches.Any(sw => sw.SceneId == scene.Id))
-                        sceneSwitchList.SceneSwitches.Add(new SceneSwitchAction() { SceneId = scene.Id, Name = roomWithScene.Metadata.Name });
+                    newSceneSwitchList.SceneSwitches.Add(
+                        oldSceneSwitchList.SceneSwitches.FirstOrDefault(sw => sw.SceneId == scene.Id) 
+                        ?? new SceneSwitchAction() { SceneId = scene.Id, Name = roomWithScene.Metadata.Name });
 
                     rooms.Remove(roomWithScene);
                     continue;
@@ -458,8 +465,9 @@ namespace FluxHueBridge
                 {
                     _sceneIds.Add(scene.Id);
 
-                    if (!sceneSwitchList.SceneSwitches.Any(sw => sw.SceneId == scene.Id))
-                        sceneSwitchList.SceneSwitches.Add(new SceneSwitchAction() { SceneId = scene.Id, Name = zoneWithScene.Metadata.Name });
+                    newSceneSwitchList.SceneSwitches.Add(
+                        oldSceneSwitchList.SceneSwitches.FirstOrDefault(sw => sw.SceneId == scene.Id)
+                        ?? new SceneSwitchAction() { SceneId = scene.Id, Name = zoneWithScene.Metadata.Name });
 
                     zones.Remove(zoneWithScene);
                     continue;
